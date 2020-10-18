@@ -27,7 +27,7 @@ class point:
         self.x = new_x + center.x
         self.y = new_y + center.y
     
-class lotnik_states:
+class ship_states:
     def __init__(self, xkey_pressed = False, ykey_pressed = False, maxhealth = 100, health = 100):
         self.xkey_pressed = xkey_pressed
         self.ykey_pressed = ykey_pressed
@@ -42,10 +42,10 @@ class weapons:
         self.rocket_cooldown = rocket_cooldown
  
         
-basic_state = lotnik_states()
+basic_state = ship_states()
 basic_weapons = weapons()
 
-class lotnik:
+class space_ship:
     def __init__(self, x, y, width, height, state = basic_state, weapons = basic_weapons, y_acc = 0.4, x_acc = 0.5, vx_max = 8, vy_max = 6, vx = 0, vy = 0, angle = 0):
         self.x = x
         self.y = y
@@ -418,9 +418,9 @@ class enemy:
             self.x = int( res_x - width * 4 + width * cos(self.action_timer / 120 * pi) )
 
             #rysowanie
-            pygame.draw.circle(win, (150,150,250), (self.x, self.y), self.r)
+            pygame.draw.circle(window, (150,150,250), (self.x, self.y), self.r)
             for i in range(3):
-                pygame.draw.rect(win, (150,150,175), (self.x - self.r - 10, (self.y - self.r * 1/6 - 8) + i * self.r * 1/3, 50, 5))
+                pygame.draw.rect(window, (150,150,175), (self.x - self.r - 10, (self.y - self.r * 1/6 - 8) + i * self.r * 1/3, 50, 5))
 
             #strzelanie
             if self.action_timer % 40 == 0:
@@ -485,28 +485,28 @@ def draw_explosion(x, y, r, window):
         list.append( ( rad * cos(i / 20 * pi*2) + x, rad * sin(i / 20 * pi*2) + y) )
     pygame.draw.polygon(window, (200,200,0), list)
 
-def explode_animation(x, y):
+def explode_animation(x, y, window):
     frames = 30
 
     for i in range(frames):
-        win.fill((0,0,0))
+        window.fill((0,0,0))
 
         for list in draw_list:
             for thing in list:
-                thing.draw(win)
-        draw_explosion(x, y, i * 2)
+                thing.draw(window)
+        draw_explosion(x, y, i * 2, window)
 
         pygame.display.update()
         pygame.time.delay(dt)
 
     frames = int(frames / 2)
     for i in range(frames):
-        win.fill((0,0,0))
+        window.fill((0,0,0))
 
         for list in draw_list:
             for thing in list:
-                thing.draw(win)
-        draw_explosion(x, y, 50 - i * 2)
+                thing.draw(window)
+        draw_explosion(x, y, 50 - i * 2, window)
 
         pygame.display.update()
         pygame.time.delay(dt)

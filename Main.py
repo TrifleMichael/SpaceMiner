@@ -21,9 +21,11 @@ x_start = 100
 y_start = 250
 
 
-hero = lotnik(x_start, y_start, 100, 20)
+hero = space_ship(x_start, y_start, 100, 20)
 
 main_text_window = text_window(res_x - 375, 55)
+main_text_window.add_text("Poruszanie WSAD")
+main_text_window.add_text("Lasery - F, rakiety - R")
 
 
 
@@ -81,10 +83,12 @@ while run:
 
     
 
-    #wylaczanie
+    #wylaczanie kliknieciem
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+
+    
 
     #sterowanie
     hero.state.xkey_pressed = False
@@ -95,6 +99,9 @@ while run:
     if keys[pygame.K_p]:
         pause(win)
 
+    #wylaczanie escape
+    if keys[pygame.K_ESCAPE]:
+        run = False
                     
         #os x
     if keys[pygame.K_d] and hero.vx + hero.x_acc < hero.vx_max:
@@ -281,7 +288,7 @@ while run:
         hero.vx = 0
         hero.vy = 0
 
-        explode_animation(hero.x, hero.y)
+        explode_animation(hero.x, hero.y, win)
 
         hero.x = x_start
         hero.y = y_start
