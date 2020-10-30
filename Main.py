@@ -4,9 +4,13 @@ pygame.init()
 from random import randrange
 from random import uniform
 
-from Classes import *
-from Settings import *
+from Active import *
+from Envoirment import *
 from ObjectLists import *
+from Pause import *
+from Settings import *
+from Utilities import *
+from Ships import *
 
 
 
@@ -30,7 +34,6 @@ main_text_window.add_text("Lasery - F, rakiety - R")
 
 
 stop_asteroids = False
-
 check_nearby_asteroids_timer = 0
 asteroid_timer = asteroid_cooldown
 background_star_timer = background_star_cooldown
@@ -39,27 +42,28 @@ health_pack_timer = health_pack_cooldown
 
 while run:
 
-    #pomiar czasu dla fps
+    # starting time measurment for fps stabilization
     current_time = pygame.time.get_ticks()
     frame_end_time = current_time + dt
 
-    #sprwadzania ktore asteroidy sa w poblizu
+    # chcecking for asteroids in collision range with ship
     check_nearby_asteroids_timer -= 1
     if check_nearby_asteroids_timer <= 0:
         check_nearby_asteroids_timer = check_nearby_asteroids_cooldown
         which_asteroids_nearby(hero, asteroid_list)
 
 
-    #tworzenie gwiazd w tle
+    # creating background stars
     background_star_timer -= 1
     if background_star_timer <= 0:
         background_star_timer = background_star_cooldown
         spawn_background_star(win)
 
-    #spawnowanie laser upgrade
+    # spawning laser upgrades
     if past_score[0] % 800 > score[0] % 800 and hero.weapons.laser_cooldown >= 22:
         spawn_laser_upgrade(win)
-    #spawnowanie wrogow
+
+    # spawnowning enemies
     if past_score[0] % 1000 > score[0] % 1000 and hero.weapons.rocket_cooldown > 180:
 
         if score[0] < 6000:
@@ -69,13 +73,13 @@ while run:
 
     past_score[0] = score[0]
 
-    #spawnowanie health packow
+    # spawning health packs
     health_pack_timer -= 1
     if health_pack_timer <= 0:
         spawn_health_pack(win)
         health_pack_timer = health_pack_cooldown
 
-    #tworzenie asteroid
+    # spawning asteroids
     asteroid_timer -= 1
     if asteroid_timer <= 0 and stop_asteroids == False:
         asteroid_timer = asteroid_cooldown
@@ -83,27 +87,27 @@ while run:
 
     
 
-    #wylaczanie kliknieciem
+    # checking for exit signal
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            run = False
-
+            run = False   
     
 
-    #sterowanie
+    # BUTTON PRESSES
     hero.state.xkey_pressed = False
     hero.state.ykey_pressed = False
     keys = pygame.key.get_pressed()
+            
+    # exit signal from escape key
+    if keys[pygame.K_ESCAPE]:
+        run = False
 
-    #pauza [ w trakcie tworzenia !]
+    # pause
     if keys[pygame.K_p]:
         pause(win)
 
-    #wylaczanie escape
-    if keys[pygame.K_ESCAPE]:
-        run = False
                     
-        #os x
+        # x axis
     if keys[pygame.K_d] and hero.vx + hero.x_acc < hero.vx_max:
         hero.vx += hero.x_acc
         hero.state.xkey_pressed = True
@@ -111,7 +115,7 @@ while run:
         hero.vx -= hero.x_acc
         hero.state.xkey_pressed = True
 
-        #os y
+        # y axis
     if keys[pygame.K_s] and hero.vy + hero.y_acc < hero.vy_max:
         hero.vy += hero.y_acc
         hero.state.ykey_pressed = True
@@ -119,7 +123,7 @@ while run:
         hero.vy -= hero.y_acc
         hero.state.ykey_pressed = True
 
-    #strzelanie
+    # shooting
     if keys[pygame.K_f]:
         hero.shoot_laser(win)
     if hero.weapons.laser_timer > 0:
@@ -129,22 +133,22 @@ while run:
         hero.fire_rocket(win)
     hero.weapons.rocket_timer -= 1
 
-    #ustawienie obrotu
+    # rotating the ship
     hero.angle = hero.vy / hero.vy_max * hero.vx / hero.vx_max * 38
 
-    #przesuwanie
+    # ship movement
     if hero.x + hero.vx < res_x - hero.width / 2 and hero.width / 2 < hero.x + hero.vx:
         hero.x += hero.vx
     if hero.y + hero.vy < res_y - hero.height / 2 and hero.height / 2 < hero.y + hero.vy:
         hero.y += hero.vy
 
-    #wyhamowanie i odbicie przy zderzeniu z krawedzia
+    # halting and reversing ship on contact with edge
     if hero.x + hero.vx > res_x - hero.width / 2 or hero.width / 2 > hero.x + hero.vx:
         hero.vx *= -0.85
     if hero.y + hero.vy > res_y - hero.height / 2 or hero.height / 2 > hero.y + hero.vy:
         hero.vy *= -0.85
 
-    #hamowanie
+    # slowing ship if no buttons pressed
     if hero.state.xkey_pressed == False and hero.vx != 0:
         hero.vx = hero.vx * (abs(hero.vx) - hero.x_acc) / abs(hero.vx)
         if abs(hero.vx) < hero.x_acc:
@@ -155,36 +159,38 @@ while run:
         if abs(hero.vy) < hero.y_acc:
             hero.vy = 0
 
-    #przesuwanie wszystkiego (bez statku)
+    # moving all movable objects
     for list in movable_list:
         for thing in list:
             thing.move()
 
 
 
-    #tworzenie dymu
+    # creating smoke
     for rockets in rocket_list:
         rockets.smoke_timer += 1
         if rockets.smoke_timer >= rockets.smoke_cooldown:
             shoot_smoke(rockets.x, rockets.y)
             rockets.smoke_timer = 0
 
-    #postarzanie dymu
+    # aging smoke
     for smokes in smoke_list:
         smokes.timer += 1
 
-    #usuwanie dymu
+    # deleting smoke
     for smokes in smoke_list:
         if smokes.if_need_deletion():
             smoke_list.remove(smokes)
 
-    #usuwanie obiektow poza mapa
-    for list in usuwane_za_mapa:
+    # deleting off-map objects
+    for list in deleted_off_map:
         for thing in list:
            if thing.off_map():
                list.remove(thing)
 
-    #kolizja z health_packami
+    # COLLISIONS
+
+    # health pack collisions
     for thing in health_pack_list:
         if hero.bubble_colision(thing):
             if hero.state.health < hero.state.maxhealth:
@@ -192,7 +198,7 @@ while run:
                 health_pack_list.remove( thing )
                 main_text_window.add_text("Podniesiono apteczkę.")
 
-    #kolizja z laser upgrade
+    # laser upgrade collision
     for thing in upgrade_list:
         if hero.bubble_colision(thing):
 
@@ -208,28 +214,29 @@ while run:
                 upgrade_list.remove(thing)
                 main_text_window.add_text("Czas przygotowania rakiet skrócony o 20%")
 
-    #zderzenie asteroidy ze statkiem
+    # ship-asteroid collision
     for thing in asteroid_list:
         if thing.near_ship:
             if hero.bubble_colision(thing):
                 hero.state.health -= thing.r * 2
                 asteroid_list.remove(thing)
 
-    #zderzenie wrogiego lasera ze statkiem
+    # laser-hero ship collision
     for thing in enemy_laser_list:
         if hero.bubble_colision(thing):
             hero.state.health -= 20
             enemy_laser_list.remove(thing)
 
 
-    #trafienie przeciwnika
+    # laser-enemy ship collision
     for enemi in enemy_list:
         for lazer in laser_list:        
             if enemi.bubble_colision( lazer ):
                 enemi.hp -= 20
                 shoot_sparks(lazer.x, lazer.y, 5, 2)
                 laser_list.remove(lazer)
-    #trafienie przeciwnika rakieta
+
+    # rocket-enemy ship collision
     for enemi in enemy_list:
         for rockets in rocket_list:
             if enemi.hit_by_rocket(rockets):
@@ -237,7 +244,7 @@ while run:
                 rocket_list.remove(rockets)
                 enemi.hp -= 40
 
-    #niszczenie przeciwnikow
+    # destroying enemies
     for enemi in enemy_list:
         if enemi.hp <= 0:
             shoot_sparks(enemi.x, enemi.y, 40, 3)
@@ -251,7 +258,7 @@ while run:
 
 
             
-    #niszczenie asteroid przez lasery
+    # laser-asteroid collision
     for lazer in laser_list:
         for asteroida in asteroid_list:        
             if lazer.if_hit_asteroid(asteroida):
@@ -262,7 +269,7 @@ while run:
                 score[0] += asteroida.r
                 break
 
-    #niszczenie asteroid przez wrogow
+    # enemy-asteroid collision
     for lazer in enemy_laser_list:
         for asteroida in asteroid_list:
             if lazer.if_hit_asteroid(asteroida):
@@ -272,7 +279,7 @@ while run:
                 enemy_laser_list.remove(lazer)
                 break
 
-    #niszczenie asteroid przez rakiety
+    # rocket-asteroid collision
     for rockets in rocket_list:
         for asteroida in asteroid_list:        
             if rockets.if_explode(asteroida):
@@ -281,7 +288,7 @@ while run:
                 break      
                      
 
-    #zgon
+    # if hero ship is destroyed
     if hero.state.health <= 0:
         hero.state.health = 100
 
@@ -304,34 +311,34 @@ while run:
             list.clear()
 
 
-    #rysowanie rzeczy
+    # DRAWING SCENE
     win.fill((0,0,0))
-
-    #rysowanie obiektow
+    
     for list in draw_list:
         for thing in list:
             thing.draw(win)
 
-    #wyswietlanie punktow
+    # score
     pointer = font.render(str(score[0]), False, (255, 255, 255))
     win.blit(pointer,(res_x - 110, 20))
 
-    #wyswietlanie statku
+    # ship
     hero.draw(win)
 
-    #okienko textowe
+    # text window
     main_text_window.show_text(win)
 
-    #wyswietlanie ui
+    # UI
     hero.draw_ui(30, 30, win)
 
     pygame.display.update()
 
-    #synchronizacja fps
+    # FPS stabilization
     current_time = pygame.time.get_ticks()
     while current_time <= frame_end_time:
         pygame.time.delay(1)
         current_time = pygame.time.get_ticks()
+
 
 
 
