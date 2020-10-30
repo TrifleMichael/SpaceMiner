@@ -7,11 +7,29 @@ from ObjectLists import *
 from Settings import *
 
 
-
-
-
 def distance(x1, y1, x2, y2):
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
+
+class movable:
+    def __init__(self, x, y, x_size, y_size, vx = 0, vy = 0):
+        self.x = x
+        self.y = y
+        self.x_size = x_size
+        self.y_size = y_size
+        self.vx = vx
+        self.vy = vy
+
+    def move(self):
+        self.x += self.vx
+        self.y += self.vy
+
+    def off_map(self):
+        if self.x + self.x_size < 0 or res_x + 150 < self.x - self.x_size:
+            return True
+        if self.y + self.y_size < 0 or res_y < self.y - self.y_size:
+            return True
+        return False
+
 
 class point:
     def __init__(self, x, y):
@@ -130,12 +148,9 @@ class space_ship:
             self.state.health = self.state.maxhealth
        
 
-class asteroid:
+class asteroid(movable):
     def __init__(self, x, y, r, color, vx = -2, vy = 0, near_ship = True):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
+        movable.__init__(self, x, y, r, r, vx)
         self.r = r
         self.color = color
         self.near_ship = near_ship
@@ -146,23 +161,9 @@ class asteroid:
             list.append( (self.r * cos(i/6 * 2*pi) + self.x, self.r * sin(i/6 * 2*pi) + self.y) )
         pygame.draw.polygon(window, self.color, list)
 
-    def off_map(self):
-        if self.x > res_x + 100 or self.x + self.r < 0:
-            return True
-        if self.y > res_y or self.y < 0:
-            return True
-        return False
-
-    def move(self):
-        self.x += self.vx
-        self.y += self.vy
-
-class laser:
+class laser(movable):
     def __init__(self, x, y, friendly = True, vx = 5, vy = 0, height = 5, width = 20, r = 2):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
+        movable.__init__(self, x, y, width/2, height/2, vx, vy)
         self.height = height
         self.width = width
         self.friendly = friendly
@@ -171,48 +172,29 @@ class laser:
     def draw(self, window):
         pygame.draw.rect(window, (200,50,50), (self.x, self.y, self.width, self.height))
 
-    def move(self):
-        self.x += self.vx
-        self.y += self.vy
-
-    def off_map(self):
-        if self.x > res_x or self.x < 0:
-            return True
-        if self.y > res_y or self.y < 0:
-            return True
-        return False
 
     def if_hit_asteroid(self, aster):
         if distance(self.x, self.y, aster.x, aster.y) < aster.r:
             return True
         return False      
 
-class health_pack:
+class health_pack(movable):
     def __init__(self, x, y, health, width = 60, height = 60, r = 30, vx = -3.2, vy = 0):
-        self.x = x
-        self.y = y
+        movable.__init__(self, x, y, width/2, height/2, vx)
         self.health = health
         self.width = width
         self.height = height
         self.r = r
-        self.vx = vx
-        self.vy = vy
 
-    def move(self):
-        self.x += self.vx
-        self.y += self.vy
 
     def draw(self, window):
         pygame.draw.rect(window, (255, 255, 255), (self.x - self.width/2, self.y - self.height/2, self.width, self.height))
         pygame.draw.rect(window, (255, 0, 0), (self.x + self.width / 3 - self.width/2, self.y + self.height * 0.2 - self.height/2, self.width / 3, self.height * 0.6))
         pygame.draw.rect(window, (255, 0, 0), (self.x + self.width * 0.2 - self.width/2, self.y + self.height / 3 - self.height/2, self.width * 0.6, self.height / 3))
 
-class rocket:
+class rocket(movable):
     def __init__(self, x, y, vx = 4, vy = 0, smoke_timer = 0, smoke_cooldown = 4, explode_radius = 200, width = 50, height = 12, point_len = 20):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
+        movable.__init__(self, x, y, width/2, height/2, vx)
         self.explode_radius = explode_radius
         self.smoke_timer = smoke_timer
         self.smoke_cooldown = smoke_cooldown
@@ -220,21 +202,10 @@ class rocket:
         self.height = height
         self.point_len = point_len
 
-    def move(self):
-        self.x += self.vx
-        self.y += self.vy
-
     def draw(self, window):
         pygame.draw.rect(window, (200, 50, 50), (self.x, self.y, self.width, self.height))
         trojkat = [(self.x + self.width, self.y), (self.x + self.width + self.point_len, self.y + self.height / 2), (self.x + self.width, self.y + self.height)]
         pygame.draw.polygon(window, (255, 0, 0), trojkat)
-
-    def off_map(self):
-        if self.x > res_x or self.x < 0:
-            return True
-        if self.y > res_y or self.y < 0:
-            return True
-        return False 
 
     # checks for asteroids in radius to explode
     def if_explode(self, aster):
@@ -260,28 +231,13 @@ class rocket:
 
 # general upgrade class
 # can be of laser or rocket type
-class upgrade:
+class upgrade(movable):
     def __init__(self, x, y, type = "laser", r = 35, vx = -3, vy = 0):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
+        movable.__init__(self, x, y, r, r, vx)
         self.r = r
         self.type = type
 
-    def off_map(self):
-        if self.x > res_x + 100 or self.x < 0:
-            return True
-        if self.y > res_y or self.y < 0:
-            return True
-        return False 
-
-    def move(self):
-        self.x += self.vx
-        self.y += self.vy
-
-    def draw(self, window):
-        
+    def draw(self, window):        
        width = 60
        height = 60
        if self.type == "laser":
@@ -297,35 +253,19 @@ class upgrade:
            pygame.draw.polygon(window, (200, 0, 0), triangle)
 
 
-class background_star:
+class background_star(movable):
     def __init__(self, x, y, r, color, vx = -1.5, vy = 0):
-        self.x = x
-        self.y = y
+        movable.__init__(self, x, y, r, r, vx)
         self.r = r
         self.color = color
-        self.vx = vx
-        self.vy = vy
-
-    def move(self):
-        self.x += self.vx
-        self.y += self.vy
 
     def draw(self, window):
         pygame.draw.circle(window, self.color, (int(self.x), int(self.y)), self.r)
 
-    def off_map(self):
-        if self.x > res_x + 100 or self.x < 0:
-            return True
-        if self.y > res_y or self.y < 0:
-            return True
-        return False
 
-class smoke:
+class smoke(movable):
     def __init__(self, x, y, r, vx, vy, color, timer = 0, time_of_death = 120):
-        self.x = x
-        self.y = y
-        self.vx = vx
-        self.vy = vy
+        movable.__init__(self, x, y, r, r, vx, vy)
         self.r = r
         self.color = color
         self.timer = timer
@@ -333,17 +273,6 @@ class smoke:
 
     def draw(self, window):
         pygame.draw.circle(window, self.color, (int(self.x), int(self.y)), self.r)
-
-    def off_map(self):
-        if self.x > res_x or self.x < 0:
-            return True
-        if self.y > res_y or self.y < 0:
-            return True
-        return False
-
-    def move(self):
-        self.x += self.vx
-        self.y += self.vy
 
     def if_need_deletion(self):
         if self.timer >= self.time_of_death:
