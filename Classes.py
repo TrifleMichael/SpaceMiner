@@ -10,7 +10,6 @@ from Settings import *
 
 
 
-#tworzenie obiektow
 def distance(x1, y1, x2, y2):
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2))
 
@@ -19,6 +18,7 @@ class point:
         self.x = x
         self.y = y
 
+    # rotates point around another point
     def rotate(self, degrees, center):
         angle = degrees * pi / 180
         new_x = cos(angle) * (self.x - center.x) - sin(angle) * (self.y - center.y)
@@ -27,6 +27,7 @@ class point:
         self.x = new_x + center.x
         self.y = new_y + center.y
     
+# class for handling ship statistics
 class ship_states:
     def __init__(self, xkey_pressed = False, ykey_pressed = False, maxhealth = 100, health = 100):
         self.xkey_pressed = xkey_pressed
@@ -34,6 +35,7 @@ class ship_states:
         self.health = health
         self.maxhealth = maxhealth
 
+# class for handling ship weapons statistics
 class weapons:
     def __init__(self, laser_timer = 0, laser_cooldown = 60, rocket_timer = 0, rocket_cooldown = 600):
         self.laser_timer = laser_timer
@@ -45,6 +47,7 @@ class weapons:
 basic_state = ship_states()
 basic_weapons = weapons()
 
+# main spaceship class
 class space_ship:
     def __init__(self, x, y, width, height, state = basic_state, weapons = basic_weapons, y_acc = 0.4, x_acc = 0.5, vx_max = 8, vy_max = 6, vx = 0, vy = 0, angle = 0):
         self.x = x
@@ -61,6 +64,7 @@ class space_ship:
         self.state = state
         self.weapons = weapons
     
+    # calculates and draws next animation frame
     def draw(self, window):
         ship_model_1 = []
         ship_model_1.append( point(self.x - self.width / 2, self.y - self.height / 2) )
@@ -86,6 +90,7 @@ class space_ship:
             rocket_list.append(rocket(self.x, self.y - 6))
             self.weapons.rocket_timer = self.weapons.rocket_cooldown
     
+    # checks for collision with other bubbles
     def bubble_colision(self, bubble):
         bubble_1 = point ( self.x + self.width / 2 - self.height / 2, self.y)
         bubble_2 = point ( self.x - self.width / 2 + self.height / 2, self.y)
@@ -107,18 +112,18 @@ class space_ship:
        pygame.draw.rect(window, (30, 30, 200), (x + 50, y, self.state.maxhealth, 10))
        pygame.draw.rect(window, (30, 200, 50), (x + 50, y, self.state.health, 10))
 
-       #laser
+       #lazer
        if self.weapons.laser_timer <= 0:
            pygame.draw.rect(window, (250, 0, 0), (x , y - 5, 8, 20))
 
-        #rakieta
+        #rocket
        if self.weapons.rocket_timer <= 0:
            pygame.draw.rect(window, (200, 50, 0), (x + 18, y - 10, 12, 30))
            triangle = [(x + 18, y - 10), (x + 24, y - 16) ,(x + 30, y - 10)]
            pygame.draw.polygon(window, (200, 0, 0), triangle)
 
 
-
+    # adds health to ship
     def heal(self, health_boost):
         self.state.health += health_boost
         if self.state.health > self.state.maxhealth:
@@ -231,6 +236,7 @@ class rocket:
             return True
         return False 
 
+    # checks for asteroids in radius to explode
     def if_explode(self, aster):
         if distance(self.x + self.width + self.point_len, self.y + self.height / 2, aster.x, aster.y) < aster.r:
             return True
@@ -238,28 +244,22 @@ class rocket:
 
     def destroy_in_radius(self, score):
 
-        #usuwanie z listy przesuwa na kolejny element stad dziwne rozwiazanie
+        # deleting asteroids in radius
+        # removing reference from list shortens it, thus a weird implementation
         shoot_sparks(int(self.x + self.width/2), int(self.y + self.height/2), 50, 3/5)
-        end = len(asteroid_list)
         i = 0
-        while i < end:
-            next = True
+        while i < len(asteroid_list):
             aster = asteroid_list[i]
-
             if distance(self.x + self.width / 2, self.y + self.height / 2, aster.x, aster.y) < self.explode_radius:
-
-                shoot_sparks(aster.x, aster.y, aster.r, 1/2)                
-
+                shoot_sparks(aster.x, aster.y, aster.r, 1/2)    
                 score[0] += int(aster.r * 3 / 4)
-                del asteroid_list[i]
-
-                end -= 1
-                next = False               
-            if next:   
+                del asteroid_list[i]       
+            else:   
                 i += 1
 
 
-      
+# general upgrade class
+# can be of laser or rocket type
 class upgrade:
     def __init__(self, x, y, type = "laser", r = 35, vx = -3, vy = 0):
         self.x = x
@@ -350,7 +350,7 @@ class smoke:
             return True
         return False
 
- # text_window do przetestowania!
+ # shows text on screen
 class text_window:
     def __init__(self, x, y, width = 200, height = 150, text_list = [], timer = 240):
         self.x = x
@@ -360,9 +360,11 @@ class text_window:
         self.text_list = text_list
         self.timer = timer
 
+    # adds text to queue
     def add_text(self, text):
         self.text_list.append( [font.render(str(text), False, (255,255,255)), self.timer, text] )
 
+    # shows texts on screen
     def show_text(self, window):
         position_y = self.y
         for text in self.text_list:
@@ -375,6 +377,7 @@ class text_window:
             if text[1] <= 0:
                 self.text_list.remove(text)
 
+# can be of regular or strong class
 class enemy:
     def __init__(self, x, y, type = "regular", action_timer = 0, hp = 100, r = 28):
         self.x = x
@@ -451,7 +454,7 @@ class enemy:
 
 
 
-#funkcje
+
 def spawn_background_star(window):
     color1 = randrange(0,100)
     color2 = randrange(0,100)
@@ -567,11 +570,11 @@ def pause(window):
                     return
 
 def spawn_enemy(type = "regular"):
-    enemy_list.append( enemy(10, 10, type) )
     stop_asteroids = True
-
     if type == "strong":
-        l = len(enemy_list)
-        enemy_list[ l - 1 ].hp = 150
+        enemy_list.append( enemy(10, 10, "strong", 0, 150) )
+    else:
+        enemy_list.append( enemy(10, 10) )
+
 
 
